@@ -3,19 +3,17 @@
 package main
 
 import (
-	//"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/git719/utl"
 	"gopkg.in/yaml.v3"
-	//"io"
 	"os"
 )
 
 const (
 	prgname = "jy"
-	prgver  = "0.0.1"
+	prgver  = "1.0.0"
 )
 
 func PrintUsage() {
