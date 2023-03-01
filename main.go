@@ -13,7 +13,7 @@ import (
 
 const (
 	prgname = "jy"
-	prgver  = "1.0.0"
+	prgver  = "1.0.1"
 )
 
 func PrintUsage() {

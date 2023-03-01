@@ -1,8 +1,8 @@
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/git719/utl v1.1.3 h1:YZTuRp8ym6kCc6PqG3q7c546yE4rf6Yd/vB8xluL4DQ=
-github.com/git719/utl v1.1.3/go.mod h1:C0sMQMi/QJFEdh/HA/WNPtHVQLqp1lXXcSA2iXq09/Y=
+github.com/git719/utl v1.1.5 h1:IllihaewgmaCK7U+RJFCO5/bPfQ+JVzmhuwkYvpr3qg=
+github.com/git719/utl v1.1.5/go.mod h1:O63lhgfH2J9HUl6h1y7LVhVxiHrMQvm5Lm6WD77NVIA=
 github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
 github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/gookit/color v1.5.2 h1:uLnfXcaFjlrDnQDT+NCBcfhrXqYTx/rcCa6xn01Y8yI=
