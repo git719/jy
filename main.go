@@ -13,7 +13,7 @@ import (
 
 const (
 	prgname = "jy"
-	prgver  = "1.0.1"
+	prgver  = "1.1.0"
 )
 
 func PrintUsage() {
@@ -30,7 +30,11 @@ func main() {
 
 	// Check if anything was piped in
 	fileInfo, _ := os.Stdin.Stat()
-	if (fileInfo.Mode() & os.ModeCharDevice) != 0 {
+	if (fileInfo.Mode()&os.ModeCharDevice) != 0 || fileInfo.Size() <= 0 {
+		// The fileInfo.Size() <= 0 check is to ensure we only attempt to read from stdin when
+		// there is actually data available, preventing the hang in GitBASH and maintaining
+		// compatibility with other shell environments.
+
 		// Nothing piped in, let's check for arguments
 		switch len(os.Args[1:]) {
 		case 1:
