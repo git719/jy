@@ -3,11 +3,11 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/git719/utl"
 	"gopkg.in/yaml.v3"
+	"io"
 	"os"
 	"runtime"
 	"strings"
@@ -15,7 +15,7 @@ import (
 
 const (
 	prgname = "jy"
-	prgver  = "1.2.0"
+	prgver  = "1.2.1"
 )
 
 func PrintUsage() {
@@ -30,13 +30,19 @@ func isGitBashOnWindows() bool {
 	return runtime.GOOS == "windows" && strings.HasPrefix(os.Getenv("MSYSTEM"), "MINGW")
 }
 
-func isStdinEmpty() bool {
-	// Git Bash on Windows handles input redirection differently than other shells. When a program
-	// is run without any input or arguments, it still treats the input as if it were piped from an
-	// empty stream, causing the program to consider it as piped input and hang. This works around that.
+func hasPipedInput() bool {
+	stat, err := os.Stdin.Stat() // Check if anything was piped in
 	if isGitBashOnWindows() {
-		stat, err := os.Stdin.Stat()
-		if err != nil || stat.Size() == 0 {
+		// Git Bash on Windows handles input redirection differently than other shells. When a program
+		// is run without any input or arguments, it still treats the input as if it were piped from an
+		// empty stream, causing the program to consider it as piped input and hang. This works around that.
+		//fmt.Fprintln(os.Stderr, "GitBASH env") // DEBUG
+		if err != nil || stat.Size() > 0 {
+			return true
+		}
+	} else {
+		//fmt.Fprintln(os.Stderr, "Other env") // DEBUG
+		if (stat.Mode() & os.ModeCharDevice) == 0 {
 			return true
 		}
 	}
@@ -44,18 +50,13 @@ func isStdinEmpty() bool {
 }
 
 func main() {
-	var buf bytes.Buffer
-
-	stat, _ := os.Stdin.Stat() // Check if anything was piped in
-
-	if (stat.Mode()&os.ModeCharDevice) == 0 && !isStdinEmpty() {
-		// Processing piped input
-		_, err := buf.ReadFrom(os.Stdin)
+	if hasPipedInput() {
+		//fmt.Fprintln(os.Stderr, "Processing piped input") // DEBUG
+		buffer, err := io.ReadAll(os.Stdin)
 		if err != nil {
-			fmt.Println("error:", err)
-			os.Exit(1)
+			fmt.Fprintln(os.Stderr, "Error reading from stdin:", err)
 		}
-		byteString := []byte(buf.String())
+		byteString := []byte(buffer)
 
 		// If JSON then convert to YAML, or vice-versa
 		var objRaw interface{}
@@ -73,7 +74,7 @@ func main() {
 		utl.PrintYaml(objRaw) // Print JSON as YAML
 		os.Exit(0)
 	} else if len(os.Args) == 2 {
-		// Processing arguments
+		//fmt.Fprintln(os.Stderr, "Processing arguments") // DEBUG
 		switch os.Args[1] { // We only care/check for ONE argument
 		case "-v":
 			// To explicitly print the usage
