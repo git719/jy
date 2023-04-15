@@ -13,11 +13,10 @@ import (
 
 const (
 	prgname = "jy"
-	prgver  = "1.1.2"
+	prgver  = "1.1.3"
 )
 
 func PrintUsage() {
-	//X := utl.Red("X")
 	fmt.Printf(prgname + " JSON & YAML converter v" + prgver + "\n" +
 		"    FILENAME  Convert given File from JSON to YAML or vice-versa\n" +
 		"              You can also pipe the file into the program\n" +
@@ -28,12 +27,10 @@ func PrintUsage() {
 func main() {
 	var buf bytes.Buffer
 
-	// Check if anything was piped in
-	fileInfo, _ := os.Stdin.Stat()
-	isGitBash := os.Getenv("GIT_BASH") == "true"
+	_, isGitBash := os.LookupEnv("MSYSTEM")
 
-	//if (fileInfo.Mode()&os.ModeCharDevice) != 0 || fileInfo.Size() <= 0 {
-	if (!isGitBash && (fileInfo.Mode()&os.ModeCharDevice) != 0) || (isGitBash && fileInfo.Size() <= 0) {
+	fileInfo, _ := os.Stdin.Stat() // Check if anything was piped in
+	if (fileInfo.Mode()&os.ModeCharDevice) != 0 || (isGitBash && fileInfo.Size() <= 0) {
 		// Nothing piped in, let's check for arguments
 		switch len(os.Args[1:]) {
 		case 1:
@@ -68,7 +65,6 @@ func main() {
 			fmt.Println("error:", err)
 			os.Exit(1)
 		}
-		//fmt.Println(buf.String())
 		byteString := []byte(buf.String())
 
 		// If JSON then convert to YAML, or vice-versa
