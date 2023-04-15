@@ -3,7 +3,7 @@ module jy
 go 1.19
 
 require (
-	github.com/git719/utl v1.1.5
+	github.com/git719/utl v1.1.6
 	gopkg.in/yaml.v3 v3.0.1
 )
 
