@@ -13,13 +13,13 @@ import (
 
 const (
 	prgname = "jy"
-	prgver  = "1.1.0"
+	prgver  = "1.1.2"
 )
 
 func PrintUsage() {
 	//X := utl.Red("X")
 	fmt.Printf(prgname + " JSON & YAML converter v" + prgver + "\n" +
-		"    File      Convert given File from JSON to YAML or vice-versa\n" +
+		"    FILENAME  Convert given File from JSON to YAML or vice-versa\n" +
 		"              You can also pipe the file into the program\n" +
 		"    -v        Print this usage page\n")
 	os.Exit(0)
@@ -30,11 +30,10 @@ func main() {
 
 	// Check if anything was piped in
 	fileInfo, _ := os.Stdin.Stat()
-	if (fileInfo.Mode()&os.ModeCharDevice) != 0 || fileInfo.Size() <= 0 {
-		// The fileInfo.Size() <= 0 check is to ensure we only attempt to read from stdin when
-		// there is actually data available, preventing the hang in GitBASH and maintaining
-		// compatibility with other shell environments.
+	isGitBash := os.Getenv("GIT_BASH") == "true"
 
+	//if (fileInfo.Mode()&os.ModeCharDevice) != 0 || fileInfo.Size() <= 0 {
+	if (!isGitBash && (fileInfo.Mode()&os.ModeCharDevice) != 0) || (isGitBash && fileInfo.Size() <= 0) {
 		// Nothing piped in, let's check for arguments
 		switch len(os.Args[1:]) {
 		case 1:
@@ -59,32 +58,33 @@ func main() {
 					utl.Die("File is unusable.\n")
 				}
 			}
+		default:
+			PrintUsage()
 		}
-		PrintUsage()
-	}
-
-	// Read piped input into a buffer
-	_, err := buf.ReadFrom(os.Stdin)
-	if err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
-	}
-	//fmt.Println(buf.String())
-	byteString := []byte(buf.String())
-
-	// If JSON then convert to YAML, or vice-versa
-	var objRaw interface{}
-	// Because JSON is essentially a subset of YAML, we have to check JSON first
-	// As an interesting aside regarding YAML & JSON, see https://news.ycombinator.com/item?id=31406473
-	_ = json.Unmarshal(byteString, &objRaw) // See if it's JSON
-	if objRaw == nil {                      // Ok, it's NOT JSON
-		_ = yaml.Unmarshal(byteString, &objRaw) // See if it's YAML
-		if objRaw == nil {
-			utl.Die("Neither JSON nor YAML.\n")
+	} else {
+		// Read piped input into a buffer
+		_, err := buf.ReadFrom(os.Stdin)
+		if err != nil {
+			fmt.Println("error:", err)
+			os.Exit(1)
 		}
-		utl.PrintJson(objRaw) // Print YAML as JSON
+		//fmt.Println(buf.String())
+		byteString := []byte(buf.String())
+
+		// If JSON then convert to YAML, or vice-versa
+		var objRaw interface{}
+		// Because JSON is essentially a subset of YAML, we have to check JSON first
+		// As an interesting aside, see https://news.ycombinator.com/item?id=31406473
+		_ = json.Unmarshal(byteString, &objRaw) // See if it's JSON
+		if objRaw == nil {                      // Ok, it's NOT JSON
+			_ = yaml.Unmarshal(byteString, &objRaw) // See if it's YAML
+			if objRaw == nil {
+				utl.Die("Neither JSON nor YAML.\n")
+			}
+			utl.PrintJson(objRaw) // Print YAML as JSON
+			os.Exit(0)
+		}
+		utl.PrintYaml(objRaw) // Print JSON as YAML
 		os.Exit(0)
 	}
-	utl.PrintYaml(objRaw) // Print JSON as YAML
-	os.Exit(0)
 }
