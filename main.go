@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/git719/utl"
+	"github.com/mattn/go-isatty"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
@@ -15,7 +16,7 @@ import (
 
 const (
 	prgname = "jy"
-	prgver  = "1.2.1"
+	prgver  = "1.2.2"
 )
 
 func PrintUsage() {
@@ -31,17 +32,15 @@ func isGitBashOnWindows() bool {
 }
 
 func hasPipedInput() bool {
-	stat, err := os.Stdin.Stat() // Check if anything was piped in
+	stat, _ := os.Stdin.Stat() // Check if anything was piped in
 	if isGitBashOnWindows() {
 		// Git Bash on Windows handles input redirection differently than other shells. When a program
 		// is run without any input or arguments, it still treats the input as if it were piped from an
 		// empty stream, causing the program to consider it as piped input and hang. This works around that.
-		//fmt.Fprintln(os.Stderr, "GitBASH env") // DEBUG
-		if err != nil || stat.Size() > 0 {
+		if !isatty.IsCygwinTerminal(os.Stdin.Fd()) {
 			return true
 		}
 	} else {
-		//fmt.Fprintln(os.Stderr, "Other env") // DEBUG
 		if (stat.Mode() & os.ModeCharDevice) == 0 {
 			return true
 		}
