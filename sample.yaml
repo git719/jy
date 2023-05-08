@@ -1,0 +1,47 @@
+# ntpcron.yaml
+# Poor man's config management script to sync Ubuntu 16.04 nodes
+# with specific NTP source
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ntpcron
+  labels:
+    tier: management
+    app: ntpcron
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: ntpcron
+  template:
+    metadata:
+      labels:
+        name: ntpcron
+    spec:
+      containers:
+        - resources:
+            requests:
+              cpu: 0.1
+          securityContext:
+            #runAsUser: 0
+            privileged: true
+          image: ubuntu:16.04
+          name: ntpcron
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              F=/metc/cron.hourly/ntpcron
+              echo '#!/bin/bash' > $F
+              echo 'C=/etc/systemd/timesyncd.conf' >> $F
+              echo 'sed -i "/^NTP=.*/d" $C' >> $F
+              echo 'echo "NTP=pool.ntp.org" >> $C' >> $F
+              echo 'systemctl restart systemd-timesyncd' >> $F
+              chmod 755 $F
+              sleep 4h
+          volumeMounts:
+            - name: metc
+              mountPath: /metc
+      volumes:
+        - name: metc
+          hostPath:
+            path: /etc

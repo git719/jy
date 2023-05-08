@@ -16,14 +16,16 @@ import (
 
 const (
 	prgname = "jy"
-	prgver  = "1.2.3"
+	prgver  = "1.2.4"
 )
 
-func PrintUsage() {
+func printUsage() {
 	fmt.Printf(prgname + " JSON|YAML converter v" + prgver + "\n" +
-		"    FILENAME  Convert given File from JSON to YAML or vice-versa\n" +
-		"              You can also pipe the file into the program\n" +
-		"    -v        Print this usage page\n")
+		"    FILENAME       Convert given file from JSON to YAML or vice-versa\n" +
+		"                   You can also pipe the file into the program\n" +
+		"    -j JSON_FILE   Print JSON file\n" +
+		"    -y YAML_FILE   Print YAML file\n" +
+		"    -v             Print this usage page\n")
 	os.Exit(0)
 }
 
@@ -48,36 +50,35 @@ func hasPipedInput() bool {
 	return false
 }
 
-func main() {
-	if hasPipedInput() {
-		//fmt.Fprintln(os.Stderr, "Processing piped input") // DEBUG
-		buffer, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error reading from stdin:", err)
-		}
-		byteString := []byte(buffer)
+func processPipedInput() {
+	buffer, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error reading from stdin:", err)
+	}
+	byteString := []byte(buffer)
 
-		// If JSON then convert to YAML, or vice-versa
-		var objRaw interface{}
-		// Because JSON is essentially a subset of YAML, we have to check JSON first
-		// As an interesting aside, see https://news.ycombinator.com/item?id=31406473
-		_ = json.Unmarshal(byteString, &objRaw) // See if it's JSON
-		if objRaw == nil {                      // Ok, it's NOT JSON
-			_ = yaml.Unmarshal(byteString, &objRaw) // See if it's YAML
-			if objRaw == nil {
-				utl.Die("Piped input is neither JSON nor YAML\n")
-			}
-			utl.PrintJson(objRaw) // Print YAML as JSON
-			os.Exit(0)
+	// If JSON then convert to YAML, or vice-versa
+	var objRaw interface{}
+	// Because JSON is essentially a subset of YAML, we have to check JSON first
+	// As an interesting aside, see https://news.ycombinator.com/item?id=31406473
+	_ = json.Unmarshal(byteString, &objRaw) // See if it's JSON
+	if objRaw == nil {                      // Ok, it's NOT JSON
+		_ = yaml.Unmarshal(byteString, &objRaw) // See if it's YAML
+		if objRaw == nil {
+			utl.Die("Piped input is neither JSON nor YAML\n")
 		}
-		utl.PrintYaml(objRaw) // Print JSON as YAML
+		utl.PrintJson(objRaw) // Print YAML as JSON
 		os.Exit(0)
-	} else if len(os.Args) == 2 {
-		//fmt.Fprintln(os.Stderr, "Processing arguments") // DEBUG
-		switch os.Args[1] { // We only care/check for ONE argument
+	}
+	utl.PrintYamlColor(objRaw) // Print JSON as colorized YAML
+	os.Exit(0)
+}
+
+func processArgumentInput() {
+	if len(os.Args) == 2 {
+		switch os.Args[1] {
 		case "-v":
-			// To explicitly print the usage
-			PrintUsage()
+			printUsage()
 		default:
 			// Or a potential JSON/YAML file to convert
 			filePath := os.Args[1]
@@ -91,13 +92,38 @@ func main() {
 					utl.PrintJson(objRaw) // Print YAML as JSON
 					os.Exit(0)
 				}
-				utl.PrintYaml(objRaw) // Print JSON as YAML
+				utl.PrintYamlColor(objRaw) // Print JSON as colorized YAML
 				os.Exit(0)
 			} else {
 				utl.Die("File is unusable\n")
 			}
 		}
+	} else if len(os.Args) == 3 {
+		switch os.Args[1] {
+		case "-j":
+			jsonObject, err := utl.LoadFileJson(os.Args[2])
+			if err != nil {
+				utl.Die(err.Error() + "\n")
+			}
+			utl.PrintJson(jsonObject)
+		case "-y":
+			yamlBytes, err := utl.LoadFileYamlBytes(os.Args[2])
+			if err != nil {
+				utl.Die(err.Error() + "\n")
+			}
+			utl.PrintYamlBytesColor(yamlBytes)
+		default:
+			printUsage()
+		}
 	} else {
-		PrintUsage()
+		printUsage()
+	}
+}
+
+func main() {
+	if hasPipedInput() {
+		processPipedInput()
+	} else {
+		processArgumentInput()
 	}
 }
