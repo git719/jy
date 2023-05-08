@@ -3,12 +3,10 @@ module jy
 go 1.19
 
 require (
-	github.com/git719/utl v1.1.7
+	github.com/git719/utl v1.1.8
 	github.com/mattn/go-isatty v0.0.18
 	gopkg.in/yaml.v3 v3.0.1
 )
-
-replace github.com/git719/utl => /Users/tek1/code/utl
 
 require (
 	github.com/fatih/color v1.10.0 // indirect
