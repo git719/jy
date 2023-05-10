@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/git719/utl"
 	goyaml "github.com/goccy/go-yaml"
+	"github.com/gookit/color"
 	"github.com/mattn/go-isatty"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -17,7 +18,7 @@ import (
 
 const (
 	prgname = "jy"
-	prgver  = "1.2.6"
+	prgver  = "1.2.7"
 )
 
 func printUsage() {
@@ -56,6 +57,10 @@ func processPipedInput() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error reading from stdin:", err)
 	}
+
+	// Remove color codes in piped input
+	stringSansColor := color.ClearCode(string(rawBytes))
+	rawBytes = []byte(stringSansColor)
 
 	// JSON must be checked first because it is a subset of the YAML standard
 	var rawObject interface{}
