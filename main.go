@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/git719/utl"
+	goyaml "github.com/goccy/go-yaml"
 	"github.com/mattn/go-isatty"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -16,15 +17,14 @@ import (
 
 const (
 	prgname = "jy"
-	prgver  = "1.2.5"
+	prgver  = "1.2.6"
 )
 
 func printUsage() {
 	fmt.Printf(prgname + " JSON|YAML converter v" + prgver + "\n" +
 		"    FILENAME       Convert given file from JSON to YAML or vice-versa\n" +
 		"                   You can also pipe the file into the program\n" +
-		"    -j JSON_FILE   Print JSON file\n" +
-		"    -y YAML_FILE   Print YAML file\n" +
+		"    -c FILENAME    Prints given JSON or YAML file in color\n" +
 		"    -v             Print this usage page\n")
 	os.Exit(0)
 }
@@ -51,27 +51,68 @@ func hasPipedInput() bool {
 }
 
 func processPipedInput() {
-	buffer, err := io.ReadAll(os.Stdin)
+	// Convert piped input from JSON to YAML or vice-versa, then print in color
+	rawBytes, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error reading from stdin:", err)
 	}
-	byteString := []byte(buffer)
 
-	// If JSON then convert to YAML, or vice-versa
-	var objRaw interface{}
-	// Because JSON is essentially a subset of YAML, we have to check JSON first
-	// As an interesting aside, see https://news.ycombinator.com/item?id=31406473
-	_ = json.Unmarshal(byteString, &objRaw) // See if it's JSON
-	if objRaw == nil {                      // Ok, it's NOT JSON
-		_ = yaml.Unmarshal(byteString, &objRaw) // See if it's YAML
-		if objRaw == nil {
+	// JSON must be checked first because it is a subset of the YAML standard
+	var rawObject interface{}
+	_ = json.Unmarshal(rawBytes, &rawObject) // Is it JSON?
+	if rawObject == nil {
+		_ = yaml.Unmarshal(rawBytes, &rawObject) // Is it YAML?
+		if rawObject == nil {
 			utl.Die("Piped input is neither JSON nor YAML\n")
 		}
-		utl.PrintJson(objRaw) // Print YAML as JSON
-		os.Exit(0)
+		// It is YAML, print in colorized JSON
+		jsonBytes, _ := goyaml.YAMLToJSON(rawBytes)
+		jsonBytes2, _ := utl.JsonBytesReindent(jsonBytes, 2) // Two space indent
+		utl.PrintJsonBytesColor(jsonBytes2)
+	} else {
+		// It is JSON, print in colorized YAML
+		utl.PrintYamlColor(rawObject)
 	}
-	utl.PrintYamlColor(objRaw) // Print JSON as colorized YAML
-	os.Exit(0)
+}
+
+func convertThenPrintInColor(filePath string) {
+	// Convert given file from JSON to YAML or vice-versa, then print in color
+	if !utl.FileUsable(filePath) {
+		utl.Die("File is unusable\n")
+	}
+	// JSON must be checked first because it is a subset of the YAML standard
+	rawObject, err := utl.LoadFileJson(filePath)
+	if err == nil {
+		// It's JSON, print in colorized YAML
+		utl.PrintYamlColor(rawObject)
+	} else {
+		yamlBytes, err := utl.LoadFileYamlBytes(filePath)
+		if err == nil {
+			// It's YAML, print in colorized JSON
+			jsonBytes, _ := goyaml.YAMLToJSON(yamlBytes)
+			jsonBytes2, _ := utl.JsonBytesReindent(jsonBytes, 2) // Two space indent
+			utl.PrintJsonBytesColor(jsonBytes2)
+		} else {
+			utl.Die("File is neither JSON nor YAML\n")
+		}
+	}
+}
+
+func printInColor(filePath string) {
+	// Print given JSON or YAML file in color
+	// JSON must be checked first because it is a subset of the YAML standard
+	jsonBytes, err := utl.LoadFileYamlBytes(filePath)
+	if err == nil {
+		utl.PrintJsonBytesColor(jsonBytes) // Print colorized JSON
+	} else {
+		// Load as raw YAML byte slice that can include comments
+		yamlBytes, err := utl.LoadFileYamlBytes(filePath)
+		if err == nil {
+			utl.PrintYamlBytesColor(yamlBytes) // Print colorized YAML
+		} else {
+			utl.Die("File is neither JSON nor YAML\n")
+		}
+	}
 }
 
 func processArgumentInput() {
@@ -80,38 +121,12 @@ func processArgumentInput() {
 		case "-v":
 			printUsage()
 		default:
-			// Or a potential JSON/YAML file to convert
-			filePath := os.Args[1]
-			if utl.FileUsable(filePath) {
-				objRaw, _ := utl.LoadFileJson(filePath)
-				if objRaw == nil { // If NOT JSON
-					objRaw, _ = utl.LoadFileYaml(filePath) // See if it's YAML
-					if objRaw == nil {
-						utl.Die("File is neither JSON nor YAML\n")
-					}
-					utl.PrintJson(objRaw) // Print YAML as JSON
-					os.Exit(0)
-				}
-				utl.PrintYamlColor(objRaw) // Print JSON as colorized YAML
-				os.Exit(0)
-			} else {
-				utl.Die("File is unusable\n")
-			}
+			convertThenPrintInColor(os.Args[1])
 		}
 	} else if len(os.Args) == 3 {
 		switch os.Args[1] {
-		case "-j":
-			jsonObject, err := utl.LoadFileJson(os.Args[2])
-			if err != nil {
-				utl.Die(err.Error() + "\n")
-			}
-			utl.PrintJson(jsonObject)
-		case "-y":
-			yamlBytes, err := utl.LoadFileYamlBytes(os.Args[2])
-			if err != nil {
-				utl.Die(err.Error() + "\n")
-			}
-			utl.PrintYamlBytesColor(yamlBytes)
+		case "-c":
+			printInColor(os.Args[2])
 		default:
 			printUsage()
 		}
