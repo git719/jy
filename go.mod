@@ -3,7 +3,7 @@ module jy
 go 1.19
 
 require (
-	github.com/git719/utl v1.1.9
+	github.com/git719/utl v1.1.10
 	github.com/goccy/go-yaml v1.11.0
 	github.com/gookit/color v1.5.2
 	github.com/mattn/go-isatty v0.0.18
