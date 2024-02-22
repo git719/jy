@@ -18,11 +18,11 @@ import (
 
 const (
 	prgname = "jy"
-	prgver  = "1.2.9"
+	prgver  = "1.3.0"
 )
 
 func printUsage() {
-	fmt.Printf(prgname + " JSON|YAML converter v" + prgver + "\n" +
+	fmt.Printf(prgname + " JSON and YAML converter utility v" + prgver + "\n" +
 		"    FILENAME       Convert given file from JSON to YAML or vice-versa\n" +
 		"                   You can also pipe the file into the program\n" +
 		"    -c FILENAME    Prints given JSON or YAML file in color\n" +
