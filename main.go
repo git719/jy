@@ -1,32 +1,34 @@
-// main.go
-
 package main
 
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"runtime"
+	"strings"
+
 	"github.com/git719/utl"
 	goyaml "github.com/goccy/go-yaml"
 	"github.com/gookit/color"
 	"github.com/mattn/go-isatty"
 	"gopkg.in/yaml.v3"
-	"io"
-	"os"
-	"runtime"
-	"strings"
 )
 
 const (
 	prgname = "jy"
-	prgver  = "1.3.1"
+	prgver  = "1.4.0"
 )
 
 func printUsage() {
-	fmt.Printf(prgname + " JSON and YAML converter utility v" + prgver + "\n" +
-		"    FILENAME       Convert given file from JSON to YAML or vice-versa\n" +
-		"                   You can also pipe the file into the program\n" +
-		"    -c FILENAME    Prints given JSON or YAML file in color\n" +
-		"    -v             Print this usage page\n")
+	fmt.Printf(prgname + " v" + prgver + "\n" +
+		"  JSON/YAML converter utility\n" +
+		"  Usage: " + prgname + " [options]\n" +
+		"    |piped input|      Piped JSON is converted to YAML, or vice versa\n" +
+		"    -d                 Decolorize the output\n" +
+		"    FILENAME           Given JSON file is outputted as YAML, or vice versa\n" +
+		"    -c FILENAME        Print given JSON or YAML file in color\n" +
+		"    -?, -h, --help     Print this usage page\n")
 	os.Exit(0)
 }
 
@@ -51,8 +53,8 @@ func hasPipedInput() bool {
 	return false
 }
 
-func processPipedInput() {
-	// Convert piped input from JSON to YAML or vice-versa, then print in color
+func processPipedInput(option string) {
+	// Convert piped input from JSON to YAML or vice-versa, then print
 	rawBytes, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error reading from stdin:", err)
@@ -70,13 +72,22 @@ func processPipedInput() {
 		if rawObject == nil {
 			utl.Die("Piped input is neither JSON nor YAML\n")
 		}
-		// It is YAML, print in colorized JSON
+		// It is YAML, print in JSON
 		jsonBytes, _ := goyaml.YAMLToJSON(rawBytes)
 		jsonBytes2, _ := utl.JsonBytesReindent(jsonBytes, 2) // Two space indent
-		utl.PrintJsonBytesColor(jsonBytes2)
+		if option == "decolor_output" {
+			jsonObj, _ := utl.JsonBytesToJsonObj(jsonBytes2)
+			utl.PrintJson(jsonObj)
+		} else {
+			utl.PrintJsonBytesColor(jsonBytes2)
+		}
 	} else {
-		// It is JSON, print in colorized YAML
-		utl.PrintYamlColor(rawObject)
+		// It is JSON, print in YAML
+		if option == "decolor_output" {
+			utl.PrintYaml(rawObject)
+		} else {
+			utl.PrintYamlColor(rawObject)
+		}
 	}
 }
 
@@ -120,13 +131,23 @@ func printInColor(filePath string) {
 	}
 }
 
-func processArgumentInput() {
+func main() {
 	if len(os.Args) == 2 {
 		switch os.Args[1] {
-		case "-v":
+		case "-d":
+			if hasPipedInput() {
+				processPipedInput("decolor_output")
+			} else {
+				printUsage()
+			}
+		case "-?", "-h", "--help":
 			printUsage()
 		default:
-			convertThenPrintInColor(os.Args[1])
+			if !hasPipedInput() {
+				convertThenPrintInColor(os.Args[1]) // Process given FILENAME
+			} else {
+				printUsage()
+			}
 		}
 	} else if len(os.Args) == 3 {
 		switch os.Args[1] {
@@ -135,15 +156,9 @@ func processArgumentInput() {
 		default:
 			printUsage()
 		}
+	} else if hasPipedInput() {
+		processPipedInput("")
 	} else {
 		printUsage()
-	}
-}
-
-func main() {
-	if hasPipedInput() {
-		processPipedInput()
-	} else {
-		processArgumentInput()
 	}
 }
