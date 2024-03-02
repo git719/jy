@@ -1,9 +1,9 @@
 module jy
 
-go 1.19
+go 1.22
 
 require (
-	github.com/git719/utl v1.3.3
+	github.com/git719/utl v1.3.4
 	github.com/goccy/go-yaml v1.11.0
 	github.com/gookit/color v1.5.2
 	github.com/mattn/go-isatty v0.0.18

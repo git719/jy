@@ -17,18 +17,18 @@ import (
 
 const (
 	prgname = "jy"
-	prgver  = "1.4.0"
+	prgver  = "1.4.1"
 )
 
 func printUsage() {
 	fmt.Printf(prgname + " v" + prgver + "\n" +
-		"  JSON/YAML converter utility\n" +
-		"  Usage: " + prgname + " [options]\n" +
-		"    |piped input|      Piped JSON is converted to YAML, or vice versa\n" +
-		"    -d                 Decolorize the output\n" +
-		"    FILENAME           Given JSON file is outputted as YAML, or vice versa\n" +
-		"    -c FILENAME        Print given JSON or YAML file in color\n" +
-		"    -?, -h, --help     Print this usage page\n")
+		"JSON/YAML converter\n" +
+		"Usage: " + prgname + " [options]\n" +
+		"  |piped input|      Piped JSON is converted to YAML, or vice versa\n" +
+		"  -d                 Decolorize the output\n" +
+		"  FILENAME           Given JSON file is outputted as YAML, or vice versa\n" +
+		"  -c FILENAME        Print given JSON or YAML file in color\n" +
+		"  -?, -h, --help     Print this usage page\n")
 	os.Exit(0)
 }
 
@@ -53,24 +53,16 @@ func hasPipedInput() bool {
 	return false
 }
 
-func processPipedInput(option string) {
-	// Convert piped input from JSON to YAML or vice-versa, then print
-	rawBytes, err := io.ReadAll(os.Stdin)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error reading from stdin:", err)
-	}
-
-	// Remove color codes in piped input
-	stringSansColor := color.ClearCode(string(rawBytes))
-	rawBytes = []byte(stringSansColor)
-
+func printOut(rawBytes []byte, option string) {
+	// Check if raw bytes are either a JSON or YAML object
 	// JSON must be checked first because it is a subset of the YAML standard
 	var rawObject interface{}
 	_ = json.Unmarshal(rawBytes, &rawObject) // Is it JSON?
 	if rawObject == nil {
-		_ = yaml.Unmarshal(rawBytes, &rawObject) // Is it YAML?
+		// Is it YAML?
+		_ = yaml.Unmarshal(rawBytes, &rawObject)
 		if rawObject == nil {
-			utl.Die("Piped input is neither JSON nor YAML\n")
+			utl.Die("Not JSON nor YAML\n")
 		}
 		// It is YAML, print in JSON
 		jsonBytes, _ := goyaml.YAMLToJSON(rawBytes)
@@ -91,27 +83,36 @@ func processPipedInput(option string) {
 	}
 }
 
-func convertThenPrintInColor(filePath string) {
-	// Convert given file from JSON to YAML or vice-versa, then print in color
+func processPipedInput(option string) {
+	// Read piped input and convert to decolorized raw bytes
+	rawBytes, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error reading from stdin:", err)
+	}
+
+	// Remove color codes in piped input
+	stringSansColor := color.ClearCode(string(rawBytes))
+	rawBytes = []byte(stringSansColor)
+
+	printOut(rawBytes, option)
+}
+
+func processFileInput(filePath, option string) {
+	// Read file input and convert to decolorized raw bytes
 	if !utl.FileUsable(filePath) {
 		utl.Die("File is unusable\n")
 	}
-	// JSON must be checked first because it is a subset of the YAML standard
-	rawObject, err := utl.LoadFileJson(filePath)
-	if err == nil {
-		// It's JSON, print in colorized YAML
-		utl.PrintYamlColor(rawObject)
-	} else {
-		yamlBytes, err := utl.LoadFileYamlBytes(filePath)
-		if err == nil {
-			// It's YAML, print in colorized JSON
-			jsonBytes, _ := goyaml.YAMLToJSON(yamlBytes)
-			jsonBytes2, _ := utl.JsonBytesReindent(jsonBytes, 2) // Two space indent
-			utl.PrintJsonBytesColor(jsonBytes2)
-		} else {
-			utl.Die("File is neither JSON nor YAML\n")
-		}
+
+	rawBytes, err := utl.LoadFileText(filePath)
+	if err != nil {
+		utl.Die("Couln't read file.\n")
 	}
+
+	// Remove color codes in file
+	stringSansColor := color.ClearCode(string(rawBytes))
+	rawBytes = []byte(stringSansColor)
+
+	printOut(rawBytes, option)
 }
 
 func printInColor(filePath string) {
@@ -144,7 +145,7 @@ func main() {
 			printUsage()
 		default:
 			if !hasPipedInput() {
-				convertThenPrintInColor(os.Args[1]) // Process given FILENAME
+				processFileInput(os.Args[1], "") // Process given FILENAME
 			} else {
 				printUsage()
 			}
