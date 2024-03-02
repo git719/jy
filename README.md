@@ -1,11 +1,14 @@
-# jy
+## jy
 JSON and YAML converter utility.
 
-## Usage
+### Usage
 ```
-jy JSON and YAML converter utility v1.2.9
-    FILENAME       Convert given file from JSON to YAML or vice-versa
-                   You can also pipe the file into the program
-    -c FILENAME    Prints given JSON or YAML file in color
-    -v             Print this usage page
+jy v1.4.1
+JSON/YAML converter
+Usage: jy [options]
+  |piped input|      Piped JSON is converted to YAML, or vice versa
+  -d                 Decolorize the output
+  FILENAME           Given JSON file is outputted as YAML, or vice versa
+  -c FILENAME        Print given JSON or YAML file in color
+  -?, -h, --help     Print this usage page
 ```
